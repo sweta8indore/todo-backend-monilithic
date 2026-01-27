@@ -1,6 +1,6 @@
 trigger:
   none   # CD pipeline – CI se trigger karwa sakte ho
-pool: practice-pool
+
 stages:
 - stage: Deploy_Production
   displayName: Deploy to Production
