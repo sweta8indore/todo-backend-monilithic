@@ -48,9 +48,6 @@ stages:
 
               python app.py
             displayName: Setup Python venv and install deps
-            env:
-              CONNECTION_STRING: $(CONNECTION_STRING)
-
             
           - script: |
               sudo systemctl stop fastapi || true
