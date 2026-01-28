@@ -19,24 +19,30 @@ stages:
           - checkout: self
 
           - script: |
-              echo "===== Updating OS ====="
-              sudo apt-get update -y
-            displayName: OS Update
+             echo "===== Updating OS ====="
+             sudo apt-get update -y
+             displayName: OS Update
 
           - script: |
-              sudo apt-get install -y curl gnupg2 unixodbc unixodbc-dev python3-pip
-            displayName: Install system deps
+              sudo apt-get install -y curl gnupg2 unixodbc unixodbc-dev python3-full python3-venv
+              displayName: Install system deps
 
           - script: |
               curl -fsSL https://packages.microsoft.com/keys/microsoft.asc | sudo gpg --dearmor -o /usr/share/keyrings/microsoft.gpg
               echo "deb [arch=amd64 signed-by=/usr/share/keyrings/microsoft.gpg] https://packages.microsoft.com/ubuntu/22.04/prod jammy main" | sudo tee /etc/apt/sources.list.d/mssql-release.list
               sudo apt-get update
               sudo ACCEPT_EULA=Y apt-get install -y msodbcsql18
-            displayName: Install MS SQL ODBC
+              displayName: Install MS SQL ODBC
 
           - script: |
-              pip3 install -r requirements.txt
-            displayName: Install Python dependencies
+              python3 -m venv venv
+              source venv/bin/activate
+
+              pip install --upgrade pip
+              pip install -r requirements.txt
+
+              python app.py
+            displayName: Setup Python venv and install deps
 
           - script: |
               sudo systemctl stop fastapi || true
