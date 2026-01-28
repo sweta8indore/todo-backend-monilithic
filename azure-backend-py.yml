@@ -1,5 +1,7 @@
-trigger:
-  none   # CD pipeline – CI se trigger karwa sakte ho
+trigger: 
+  branches:
+   include:
+     - master
 
 stages:
 - stage: Deploy_Production
@@ -43,6 +45,9 @@ stages:
 
               python app.py
             displayName: Setup Python venv and install deps
+
+            env:
+            CONNECTION_STRING: $(CONNECTION_STRING)
 
           - script: |
               sudo systemctl stop fastapi || true
