@@ -42,9 +42,9 @@ stages:
               pip install -r requirements.txt
 
               python app.py
-            displayName: Setup Python venv and install deps
+              displayName: Setup Python venv and install deps
 
           - script: |
               sudo systemctl stop fastapi || true
               sudo systemctl start fastapi
-            displayName: Restart FastAPI Service
+              displayName: Restart FastAPI Service
