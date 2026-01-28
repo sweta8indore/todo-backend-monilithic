@@ -3,6 +3,9 @@ trigger:
    include:
      - master
 
+variables:
+- group: New variable group 28-Jan
+
 stages:
 - stage: Deploy_Production
   displayName: Deploy to Production
