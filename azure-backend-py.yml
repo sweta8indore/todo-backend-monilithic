@@ -1,7 +1,4 @@
 trigger: none
-  # branches:
-  #  include:
-  #    - master
 
 variables:
 - group: database-string
@@ -9,9 +6,11 @@ variables:
 stages:
 - stage: Deploy_Production
   displayName: Deploy to Production
+
   jobs:
   - deployment: DeployFastAPI
     displayName: FastAPI Deployment
+
     environment:
       name: production-backend
       resourceType: VirtualMachine
@@ -23,33 +22,31 @@ stages:
           steps:
           - checkout: self
 
+          # 🔹 Step 1: Copy code to server folder
           - script: |
-             echo "===== Updating OS ====="
-             sudo apt-get update -y
-            displayName: OS Update
+              echo "Deploying code..."
+              mkdir -p ~/fastapi-app
+              cp -r $(System.DefaultWorkingDirectory)/* ~/fastapi-app/
+            displayName: Copy Code
 
+          # 🔹 Step 2: Setup venv (only if not exists)
           - script: |
-              sudo apt-get install -y curl gnupg2 unixodbc unixodbc-dev python3-full python3-venv
-            displayName: Install system deps
+              cd ~/fastapi-app
 
-          - script: |
-              curl -fsSL https://packages.microsoft.com/keys/microsoft.asc | sudo gpg --dearmor -o /usr/share/keyrings/microsoft.gpg
-              echo "deb [arch=amd64 signed-by=/usr/share/keyrings/microsoft.gpg] https://packages.microsoft.com/ubuntu/22.04/prod jammy main" | sudo tee /etc/apt/sources.list.d/mssql-release.list
-              sudo apt-get update
-              sudo ACCEPT_EULA=Y apt-get install -y msodbcsql18
-            displayName: Install MS SQL ODBC
+              if [ ! -d "venv" ]; then
+                echo "Creating virtual environment..."
+                python3 -m venv venv
+              fi
 
-          - script: |
-              python3 -m venv venv
               source venv/bin/activate
 
               pip install --upgrade pip
               pip install -r requirements.txt
+            displayName: Setup Python Environment
 
-              python app.py
-            displayName: Setup Python venv and install deps
-            
+          # 🔹 Step 3: Restart FastAPI service
           - script: |
-              sudo systemctl stop fastapi || true
-              sudo systemctl start fastapi
-            displayName: Restart FastAPI Service
+              echo "Restarting FastAPI service..."
+              sudo systemctl restart fastapi
+              sudo systemctl status fastapi --no-pager
+            displayName: Restart Service
