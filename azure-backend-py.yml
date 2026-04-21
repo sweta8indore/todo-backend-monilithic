@@ -1,7 +1,7 @@
-trigger: 
-  branches:
-   include:
-     - master
+trigger: none
+  # branches:
+  #  include:
+  #    - master
 
 variables:
 - group: database-string
@@ -13,7 +13,7 @@ stages:
   - deployment: DeployFastAPI
     displayName: FastAPI Deployment
     environment:
-      name: production
+      name: production-backend
       resourceType: VirtualMachine
       resourceName: backend-vm
 
