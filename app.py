@@ -18,7 +18,7 @@ app = FastAPI()
 # Configure CORSMiddleware to allow all origins (disable CORS for development)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://20.192.21.212"],  # This allows all origins (use '*' for development only)
+    allow_origins=["*"],  # This allows all origins (use '*' for development only)
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
