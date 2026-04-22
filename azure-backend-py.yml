@@ -1,4 +1,6 @@
 trigger: none
+variables:
+- group: database-string
 
 stages:
 - stage: Deploy_Production
@@ -19,62 +21,36 @@ stages:
           steps:
           - checkout: self
 
-          # 🔹 Step 1: Copy Code
           - script: |
-              echo "Copying project files..."
-              mkdir -p ~/fastapi-app
-              cp -r $(System.DefaultWorkingDirectory)/* ~/fastapi-app/
-            displayName: Copy Code
+             echo "===== Updating OS ====="
+             sudo apt-get update -y
+            displayName: OS Update
 
-          # 🔹 Step 2: Install system dependencies (ODBC etc.)
           - script: |
-              echo "Installing system dependencies..."
+              sudo apt-get install -y curl gnupg2 unixodbc unixodbc-dev python3-full python3-venv
+            displayName: Install system deps
 
-              sudo apt-get update -y
-              sudo apt-get install -y curl gnupg2 unixodbc unixodbc-dev python3 python3-venv python3-pip
-
-              # Add Microsoft repo
+          - script: |
               curl -fsSL https://packages.microsoft.com/keys/microsoft.asc | sudo gpg --dearmor -o /usr/share/keyrings/microsoft.gpg
-
-              echo "deb [arch=amd64 signed-by=/usr/share/keyrings/microsoft.gpg] https://packages.microsoft.com/debian/12/prod bookworm main" | \
-              sudo tee /etc/apt/sources.list.d/mssql-release.list
-
-              sudo apt-get update -y
-
-              # Install ODBC driver
+              echo "deb [arch=amd64 signed-by=/usr/share/keyrings/microsoft.gpg] https://packages.microsoft.com/ubuntu/22.04/prod jammy main" | sudo tee /etc/apt/sources.list.d/mssql-release.list
+              sudo apt-get update
               sudo ACCEPT_EULA=Y apt-get install -y msodbcsql18
+            displayName: Install MS SQL ODBC
 
-            displayName: Install System Dependencies
-
-          # 🔹 Step 3: Setup Python + Install requirements
           - script: |
-              echo "Setting up Python environment..."
-
-              cd ~/fastapi-app
-
-              # Fresh venv (avoid corruption)
-              rm -rf venv
               python3 -m venv venv
-
               source venv/bin/activate
 
-              python -m pip install --upgrade pip
-              python -m pip install -r requirements.txt
+              pip install --upgrade pip
+              pip install -r requirements.txt
 
-            displayName: Setup Python Environment
+              python app.py
+            displayName: Setup Python venv and install deps
 
-          # 🔹 Step 4: Restart FastAPI (via systemd)
+            env:
+              CONNECTION_STRING: $(CONNECTION_STRING)
+
           - script: |
-              echo "Restarting FastAPI service..."
-
-              if systemctl list-units --type=service | grep -q fastapi; then
-                sudo systemctl restart fastapi
-                sudo systemctl status fastapi --no-pager
-              else
-                echo "FastAPI service not found, running manually..."
-
-                # fallback (not recommended for prod)
-                nohup ~/fastapi-app/venv/bin/uvicorn app:app --host 0.0.0.0 --port 8000 > app.log 2>&1 &
-              fi
-
-            displayName: Start Application
+              sudo systemctl stop fastapi || true
+              sudo systemctl start fastapi
+            displayName: Restart FastAPI Service
