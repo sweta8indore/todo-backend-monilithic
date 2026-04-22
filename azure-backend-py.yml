@@ -12,7 +12,7 @@ stages:
     displayName: FastAPI Deployment
 
     environment:
-      name: production-backend
+      name: dev-backend
       resourceType: VirtualMachine
       resourceName: backend-vm
 
