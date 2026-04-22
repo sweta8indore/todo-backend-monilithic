@@ -24,52 +24,33 @@ stages:
 
           # 🔹 Step 1: Copy code
           - script: |
-              echo "Deploying code..."
-              mkdir -p ~/fastapi-app
-              cp -r $(System.DefaultWorkingDirectory)/* ~/fastapi-app/
-            displayName: Copy Code
+              echo "Installing Python if missing..."
+              sudo apt-get update -y
+              sudo apt-get install -y python3 python3-venv python3-pip
 
-          # 🔹 Step 2: Install Python + venv if missing
-          - script: |
-              echo "Checking Python installation..."
-
-              if ! command -v python3 &> /dev/null
-              then
-                echo "Python3 not found. Installing..."
-                sudo apt update
-                sudo apt install -y python3 python3-venv python3-pip
-              fi
+              echo "Verifying Python..."
+              which python3
+              python3 --version
 
               cd ~/fastapi-app
 
-              # Create venv if not exists
-              if [ ! -d "venv" ]; then
-                echo "Creating virtual environment..."
-                python3 -m venv venv
+              # Remove broken venv (IMPORTANT)
+              if [ -d "venv" ]; then
+                echo "Removing old venv..."
+                rm -rf venv
               fi
+
+              echo "Creating fresh virtual environment..."
+              python3 -m venv venv
 
               # Activate venv
               source venv/bin/activate
 
-              # Ensure pip exists
-              python -m ensurepip --upgrade
+              echo "Checking python inside venv..."
+              which python
 
-              # Upgrade pip
+              # Install dependencies properly
               python -m pip install --upgrade pip
-
-              # Install dependencies
               python -m pip install -r requirements.txt
 
             displayName: Setup Python Environment
-
-          # 🔹 Step 3: Restart service safely
-          - script: |
-              echo "Restarting FastAPI service..."
-
-              if systemctl list-units --type=service | grep -q fastapi; then
-                sudo systemctl restart fastapi
-                sudo systemctl status fastapi --no-pager
-              else
-                echo "FastAPI service not found. Please create systemd service first."
-              fi
-            displayName: Restart Service
