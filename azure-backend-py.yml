@@ -22,31 +22,54 @@ stages:
           steps:
           - checkout: self
 
-          # 🔹 Step 1: Copy code to server folder
+          # 🔹 Step 1: Copy code
           - script: |
               echo "Deploying code..."
               mkdir -p ~/fastapi-app
               cp -r $(System.DefaultWorkingDirectory)/* ~/fastapi-app/
             displayName: Copy Code
 
-          # 🔹 Step 2: Setup venv (only if not exists)
+          # 🔹 Step 2: Install Python + venv if missing
           - script: |
+              echo "Checking Python installation..."
+
+              if ! command -v python3 &> /dev/null
+              then
+                echo "Python3 not found. Installing..."
+                sudo apt update
+                sudo apt install -y python3 python3-venv python3-pip
+              fi
+
               cd ~/fastapi-app
 
+              # Create venv if not exists
               if [ ! -d "venv" ]; then
                 echo "Creating virtual environment..."
                 python3 -m venv venv
               fi
 
+              # Activate venv
               source venv/bin/activate
 
-              pip install --upgrade pip
-              pip install -r requirements.txt
+              # Ensure pip exists
+              python -m ensurepip --upgrade
+
+              # Upgrade pip
+              python -m pip install --upgrade pip
+
+              # Install dependencies
+              python -m pip install -r requirements.txt
+
             displayName: Setup Python Environment
 
-          # 🔹 Step 3: Restart FastAPI service
+          # 🔹 Step 3: Restart service safely
           - script: |
               echo "Restarting FastAPI service..."
-              sudo systemctl restart fastapi
-              sudo systemctl status fastapi --no-pager
+
+              if systemctl list-units --type=service | grep -q fastapi; then
+                sudo systemctl restart fastapi
+                sudo systemctl status fastapi --no-pager
+              else
+                echo "FastAPI service not found. Please create systemd service first."
+              fi
             displayName: Restart Service
